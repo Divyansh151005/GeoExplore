@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import time
 from utils.data_processing import (
     load_shapefile, 
     transform_coordinates, 
@@ -807,37 +808,42 @@ elif page == "Exploration Targets":
             # Add high-potential areas as GeoJSON
             from matplotlib.path import Path
             
-            # Extract contour paths for high-potential areas
-            for path_collection in high_potential.collections:
-                for path in path_collection.get_paths():
-                    coords = path.vertices
-                    
-                    # Create a polygon GeoJSON feature
-                    if len(coords) > 2:  # Need at least 3 points for a polygon
-                        polygon = {
+            # Add a simplified high-potential area polygon based on threshold
+            try:
+                # Calculate grid points that meet the threshold
+                high_potential_points = []
+                for i in range(X.shape[0]):
+                    for j in range(X.shape[1]):
+                        if Z[i, j] >= probability_threshold:
+                            high_potential_points.append([X[i, j], Y[i, j]])
+                
+                if high_potential_points:
+                    # Create a simplified polygon for high potential areas
+                    folium.GeoJson(
+                        {
                             "type": "Feature",
                             "geometry": {
                                 "type": "Polygon",
-                                "coordinates": [coords.tolist()]
+                                "coordinates": [high_potential_points[:100]]  # Limit to first 100 points for simplicity
                             },
                             "properties": {
                                 "mineral": target_mineral,
                                 "probability": f">= {probability_threshold}"
                             }
-                        }
-                        
-                        # Add to map
-                        folium.GeoJson(
-                            polygon,
-                            name=f"High Potential {target_mineral} Area",
-                            style_function=lambda x: {
-                                "fillColor": "red",
-                                "color": "black",
-                                "weight": 2,
-                                "fillOpacity": 0.5
-                            },
-                            tooltip=folium.Tooltip(f"High Potential {target_mineral} Area")
-                        ).add_to(m)
+                        },
+                        name=f"High Potential {target_mineral} Area",
+                        style_function=lambda x: {
+                            "fillColor": "red",
+                            "color": "black",
+                            "weight": 2,
+                            "fillOpacity": 0.5
+                        },
+                        tooltip=folium.Tooltip(f"High Potential {target_mineral} Area")
+                    ).add_to(m)
+                else:
+                    st.warning("No high potential areas found at the selected threshold.")
+            except Exception as e:
+                st.warning(f"Unable to add high-potential areas to map: {str(e)}")
             
             # Add layer control
             folium.LayerControl().add_to(m)
