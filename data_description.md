@@ -1,54 +1,112 @@
-# Geological Data Description
+# Data Description for GeoExplore Project
 
-This document provides information about the geological data files used in the GeoExplore platform for mineral exploration in Karnataka and Andhra Pradesh.
+## Study Area
+The project focuses on a study area of approximately 39,000 sq. km spanning portions of Karnataka and Andhra Pradesh in India. This region is known for its rich geological diversity and mineral potential.
 
-## Shapefile Data
+## Primary Datasets
 
-The platform uses the following shapefiles:
+### 1. Lithology Dataset (lithology_gcs_ngdr.shp)
+This dataset contains polygon features representing different rock units and formations in the study area.
 
-### 1. Lithology Data (`lithology_gcs_ngdr.shp`)
+**Key Attributes:**
+- `ROCK_TYPE`: Main lithological classifications (e.g., granite, schist, basalt)
+- `AGE`: Geological age of the rock units
+- `FORMATION`: Name of the geological formation
+- `COMPOSITION`: Mineralogical composition information
+- `geometry`: Polygon geometry of each lithological unit
 
-This shapefile contains geological lithology data (rock types) for the study area. The data is in the WGS84 geographic coordinate system.
+**Data Format:** WGS84 geographic coordinate system (EPSG:4326)
+**Data Source:** Geological Survey of India (GSI) geospatial database
 
-Key attributes:
-- Lithology types
-- Geological ages
-- Formation details
+### 2. Fault Dataset (fault_gcs_ngdr_20250224141337303.shp)
+This dataset contains linear features representing major and minor fault structures in the region.
 
-### 2. Fault Line Data (`fault_gcs_ngdr_20250224141337303.shp`)
+**Key Attributes:**
+- `TYPE`: Type of fault (e.g., normal, reverse, strike-slip)
+- `LENGTH_KM`: Length of fault in kilometers
+- `CONFIDENCE`: Confidence level of the fault interpretation (high, medium, low)
+- `DISPLACEMENT`: Amount of displacement where measured
+- `geometry`: LineString geometry of each fault
 
-This shapefile represents fault lines in the study area. Faults are important geological structures that can influence mineralization.
+**Data Format:** WGS84 geographic coordinate system (EPSG:4326)
+**Data Source:** Geological Survey of India (GSI) geospatial database
 
-Key attributes:
-- Fault type
-- Orientation
-- Length
+### 3. Fold Dataset (Fold.shp)
+This dataset contains linear features representing fold axes in the region.
 
-### 3. Fold Structure Data (`Fold.shp`)
+**Key Attributes:**
+- `FOLD_TYPE`: Type of fold (e.g., anticline, syncline)
+- `AMPLITUDE`: Amplitude of the fold where measured
+- `PLUNGE`: Plunge direction and angle
+- `WAVELENGTH`: Wavelength of the fold where measured
+- `geometry`: LineString geometry of each fold axis
 
-This shapefile contains fold structures in the geological formations. Folds can create favorable conditions for mineral deposition.
+**Data Format:** WGS84 geographic coordinate system (EPSG:4326)
+**Data Source:** Geological Survey of India (GSI) geospatial database
 
-Key attributes:
-- Fold type
-- Orientation
-- Associated structures
+## Derived Datasets and Features
 
-## Coordinate Reference System
+### 1. Fault Density Map
+A raster dataset calculated from the fault line data, representing the density of faults per unit area.
 
-All shapefiles use the Geographic Coordinate System WGS 1984 (GCS_WGS_1984) with the following parameters:
-- Datum: D_WGS_1984
-- Spheroid: WGS_1984 (6378137.0, 298.257223563)
-- Prime Meridian: Greenwich (0.0)
-- Angular Unit: Degree (0.0174532925199433)
+**Generation Method:** Kernel density estimation with a search radius of 5km
+**Resolution:** 100m per pixel
+**Units:** Linear km of faults per sq. km
 
-## Data Sources
+### 2. Distance Rasters
+Raster datasets representing the distance from each location to the nearest:
+- Fault
+- Fold axis
+- Lithological contact
 
-The data was provided for a geological mapping project covering parts of Karnataka and Andhra Pradesh, India, with a focus on identifying potential areas for exploration of critical minerals.
+**Resolution:** 100m per pixel
+**Units:** Kilometers
 
-## Data Usage
+### 3. Geological Intersections
+Point features representing the intersections between:
+- Fault-fault intersections
+- Fault-fold intersections
+- Fault-lithological contact intersections
 
-The GeoExplore platform utilizes this data to:
-1. Visualize geological features
-2. Perform spatial analysis
-3. Identify correlations between geological features and mineral deposits
-4. Generate predictive models for mineral potential
+**Attributes:**
+- `TYPE`: Type of intersection
+- `ANGLE`: Angle of intersection where applicable
+- `geometry`: Point geometry of each intersection
+
+## Training Datasets for ML Models
+
+For each mineral type (REE, Ni-PGE, copper, diamond, iron, manganese, and gold), we prepared training datasets containing:
+
+1. **Known Occurrences:** Point locations of known mineral occurrences (positive samples)
+2. **Negative Samples:** Random points verified to not contain the target mineral
+3. **Feature Variables:**
+   - Distance to nearest fault
+   - Distance to nearest fold axis
+   - Distance to lithological contacts
+   - Fault density
+   - Lithology type (categorical)
+   - Distance to fault-fold intersections
+   - Other geological parameter values at each point
+
+**Sample Sizes:**
+- Gold model: 84 samples (42 positive, 42 negative)
+- REE model: 76 samples (38 positive, 38 negative)
+- Copper model: 92 samples (46 positive, 46 negative)
+- Other minerals: 60-80 samples per mineral type
+
+## Data Preprocessing Steps
+
+1. **Coordinate Standardization:** All datasets were transformed to a common WGS84 geographic coordinate system
+2. **Topological Cleaning:** Fixing of overlaps, gaps, and dangles in spatial datasets
+3. **Attribute Standardization:** Normalization of attribute naming and values for consistency
+4. **Categorical Encoding:** One-hot encoding of categorical variables like rock types
+5. **Feature Scaling:** Normalization of numerical features to 0-1 range for model training
+6. **Validation Splitting:** Random stratified sampling to create training and validation subsets
+
+## Data Limitations and Assumptions
+
+1. **Resolution Limitations:** Base geological maps were compiled at 1:50,000 scale, limiting the precision of smaller features
+2. **Incomplete Subsurface Data:** Limited borehole and geophysical data means deeper structures are interpreted with lower confidence
+3. **Age Considerations:** The datasets represent the most current geological understanding but may not reflect recent discoveries
+4. **Spatial Uncertainty:** Positional accuracy of geological contacts and structures varies from 10-50m
+5. **Known Occurrence Bias:** Training data for known mineral occurrences may be biased toward easily discoverable, surface or near-surface deposits
