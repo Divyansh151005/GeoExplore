@@ -191,44 +191,56 @@ elif page == "Data Exploration":
             # Try to add each layer if available
             layers_added = False
             
-            try:
-                lithology_data = load_shapefile(LITHOLOGY_SHP)
-                if lithology_data is not None:
+            # Load lithology data
+            lithology_data = load_shapefile(LITHOLOGY_SHP)
+            if lithology_data is not None:
+                try:
+                    # Convert to GeoJSON manually
+                    lithology_geojson = lithology_data.to_crs("EPSG:4326").__geo_interface__
                     # Add lithology layer
                     folium.GeoJson(
-                        lithology_data,
+                        lithology_geojson,
                         name="Lithology",
                         style_function=lambda x: {'fillColor': 'green', 'color': 'green', 'weight': 1, 'fillOpacity': 0.5}
                     ).add_to(combined_map)
                     layers_added = True
-            except Exception as e:
-                st.warning(f"Could not add lithology layer: {str(e)}")
+                    st.success("Lithology layer added successfully")
+                except Exception as e:
+                    st.warning(f"Could not add lithology layer: {str(e)}")
             
-            try:
-                fault_data = load_shapefile(FAULT_SHP)
-                if fault_data is not None:
+            # Load fault data
+            fault_data = load_shapefile(FAULT_SHP)
+            if fault_data is not None:
+                try:
+                    # Convert to GeoJSON manually
+                    fault_geojson = fault_data.to_crs("EPSG:4326").__geo_interface__
                     # Add fault layer
                     folium.GeoJson(
-                        fault_data,
+                        fault_geojson,
                         name="Faults",
                         style_function=lambda x: {'color': 'red', 'weight': 2}
                     ).add_to(combined_map)
                     layers_added = True
-            except Exception as e:
-                st.warning(f"Could not add fault layer: {str(e)}")
+                    st.success("Fault layer added successfully")
+                except Exception as e:
+                    st.warning(f"Could not add fault layer: {str(e)}")
             
-            try:
-                fold_data = load_shapefile(FOLD_SHP)
-                if fold_data is not None:
+            # Load fold data
+            fold_data = load_shapefile(FOLD_SHP)
+            if fold_data is not None:
+                try:
+                    # Convert to GeoJSON manually
+                    fold_geojson = fold_data.to_crs("EPSG:4326").__geo_interface__
                     # Add fold layer
                     folium.GeoJson(
-                        fold_data,
+                        fold_geojson,
                         name="Folds",
                         style_function=lambda x: {'color': 'blue', 'weight': 2}
                     ).add_to(combined_map)
                     layers_added = True
-            except Exception as e:
-                st.warning(f"Could not add fold layer: {str(e)}")
+                    st.success("Fold layer added successfully")
+                except Exception as e:
+                    st.warning(f"Could not add fold layer: {str(e)}")
             
             if layers_added:
                 folium_static(combined_map)
