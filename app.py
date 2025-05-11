@@ -189,8 +189,8 @@ elif page == "Data Exploration":
             combined_map = folium.Map(location=[15.0, 78.0], zoom_start=7, control_scale=True)
             
             # Add a tile layer to ensure the map has content
-            folium.TileLayer('OpenStreetMap').add_to(combined_map)
-            folium.TileLayer('Stamen Terrain').add_to(combined_map)
+            folium.TileLayer('OpenStreetMap', attr='Map data © OpenStreetMap contributors').add_to(combined_map)
+            folium.TileLayer('CartoDB positron', attr='Map tiles by CartoDB, under CC BY 3.0. Data by OpenStreetMap, under ODbL.').add_to(combined_map)
             
             # Add layer controls
             folium.LayerControl().add_to(combined_map)
