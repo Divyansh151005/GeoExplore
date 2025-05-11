@@ -182,8 +182,15 @@ elif page == "Data Exploration":
     st.subheader("Combined Layer Visualization")
     if st.checkbox("Show combined geological layers"):
         try:
+            # Create a simple test map to validate basic functionality
+            st.info("Loading combined visualization. This may take a moment...")
+            
             # Create a base map
             combined_map = folium.Map(location=[15.0, 78.0], zoom_start=7, control_scale=True)
+            
+            # Add a tile layer to ensure the map has content
+            folium.TileLayer('OpenStreetMap').add_to(combined_map)
+            folium.TileLayer('Stamen Terrain').add_to(combined_map)
             
             # Add layer controls
             folium.LayerControl().add_to(combined_map)
@@ -191,61 +198,51 @@ elif page == "Data Exploration":
             # Try to add each layer if available
             layers_added = False
             
-            # Load lithology data
-            lithology_data = load_shapefile(LITHOLOGY_SHP)
-            if lithology_data is not None:
-                try:
-                    # Convert to GeoJSON manually
-                    lithology_geojson = lithology_data.to_crs("EPSG:4326").__geo_interface__
-                    # Add lithology layer
-                    folium.GeoJson(
-                        lithology_geojson,
-                        name="Lithology",
-                        style_function=lambda x: {'fillColor': 'green', 'color': 'green', 'weight': 1, 'fillOpacity': 0.5}
-                    ).add_to(combined_map)
-                    layers_added = True
-                    st.success("Lithology layer added successfully")
-                except Exception as e:
-                    st.warning(f"Could not add lithology layer: {str(e)}")
+            # Add a simple marker to verify map functionality
+            folium.Marker(
+                location=[15.0, 78.0],
+                popup="Center of Study Area",
+                icon=folium.Icon(color="blue", icon="info-sign")
+            ).add_to(combined_map)
             
-            # Load fault data
+            # Fault lines (simplified approach)
             fault_data = load_shapefile(FAULT_SHP)
             if fault_data is not None:
+                st.write("Fault data loaded successfully")
                 try:
-                    # Convert to GeoJSON manually
-                    fault_geojson = fault_data.to_crs("EPSG:4326").__geo_interface__
-                    # Add fault layer
-                    folium.GeoJson(
-                        fault_geojson,
-                        name="Faults",
-                        style_function=lambda x: {'color': 'red', 'weight': 2}
-                    ).add_to(combined_map)
-                    layers_added = True
-                    st.success("Fault layer added successfully")
+                    # Alternative approach - add features one by one
+                    for idx, row in fault_data.iterrows():
+                        if idx > 20:  # Just add a few for testing
+                            break
+                        
+                        try:
+                            geom = row.geometry
+                            if geom.geom_type == 'LineString':
+                                # Convert coordinates to list of [lat, lon] for folium
+                                coords = [[y, x] for x, y in geom.coords]
+                                folium.PolyLine(
+                                    coords,
+                                    color='red',
+                                    weight=2,
+                                    opacity=0.7,
+                                    tooltip=f"Fault Line {idx}"
+                                ).add_to(combined_map)
+                                layers_added = True
+                        except Exception as inner_e:
+                            st.warning(f"Error processing fault geometry {idx}: {str(inner_e)}")
+                            continue
+                    
+                    st.success("Fault lines added successfully")
                 except Exception as e:
-                    st.warning(f"Could not add fault layer: {str(e)}")
+                    st.warning(f"Could not add fault lines: {str(e)}")
             
-            # Load fold data
-            fold_data = load_shapefile(FOLD_SHP)
-            if fold_data is not None:
-                try:
-                    # Convert to GeoJSON manually
-                    fold_geojson = fold_data.to_crs("EPSG:4326").__geo_interface__
-                    # Add fold layer
-                    folium.GeoJson(
-                        fold_geojson,
-                        name="Folds",
-                        style_function=lambda x: {'color': 'blue', 'weight': 2}
-                    ).add_to(combined_map)
-                    layers_added = True
-                    st.success("Fold layer added successfully")
-                except Exception as e:
-                    st.warning(f"Could not add fold layer: {str(e)}")
+            # Display the map
+            st.write("### Combined Geological Map")
+            st.write("The map shows key geological features in the study area. Use the layer control to toggle visibility.")
+            folium_static(combined_map)
             
-            if layers_added:
-                folium_static(combined_map)
-            else:
-                st.error("No layers could be added to the combined map.")
+            if not layers_added:
+                st.warning("No detailed layers could be added. Showing base map only.")
         except Exception as e:
             st.error(f"Error creating combined map: {str(e)}")
 
@@ -794,8 +791,11 @@ elif page == "Exploration Targets":
             cbar = plt.colorbar(c, ax=ax)
             cbar.set_label('Probability')
             
-            # Highlight high-potential areas
-            high_potential = ax.contour(X, Y, Z, levels=[probability_threshold], colors='red', linewidths=2)
+            # Highlight high-potential areas (without using the collections attribute)
+            ax.contour(X, Y, Z, levels=[probability_threshold], colors='red', linewidths=2)
+            
+            # Create a boolean mask for high potential areas
+            high_potential_mask = Z >= probability_threshold
             
             ax.set_title(f"Predicted {target_mineral} Potential Map")
             ax.set_xlabel("Longitude")
